@@ -1,0 +1,156 @@
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: >-
+      /aws/service/canonical/ubuntu/server/18.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+Resources:
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+      UserData:
+        Fn::Base64: |
+            #!/bin/bash
+            sudo su
+            cd ~
+            sudo apt update
+            sudo apt install nodejs
+            sudo apt install npm
+      IamInstanceProfile:
+        !Ref RootInstanceProfile
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestAmiId
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d4329778-2e16-4911-9ce3-f7aa9cc40d0b
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 2bf73695-097d-499b-b396-db029bed2cf8
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e1db1c3c-792b-4cbd-bcbe-bf8e31b86cc4
+  RootRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+  RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: root
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+            - "s3:ListAllMyBuckets"
+            - "s3:GetObjects"
+            - "s3:ListBucket"
+          Resource: 
+            - "arn:aws:s3:::reactsearch-scripts"
+            - "arn:aws:s3:::reactsearch-scripts/*"
+      Roles:
+      - !Ref RootRole
+  RootInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref RootRole
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref EC2Instance
+  AZ:
+    Description: Availability Zone of the newly created EC2 instance
+    Value: !GetAtt 
+      - EC2Instance
+      - AvailabilityZone
+  PublicDNS:
+    Description: Public DNSName of the newly created EC2 instance
+    Value: !GetAtt 
+      - EC2Instance
+      - PublicDnsName
+  PublicIP:
+    Description: Public IP address of the newly created EC2 instance
+    Value: !GetAtt 
+      - EC2Instance
+      - PublicIp
+Metadata:
+  'AWS::CloudFormation::Designer':
+    e1db1c3c-792b-4cbd-bcbe-bf8e31b86cc4:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 250
+        'y': 90
+      z: 1
+      embeds: []
+    2bf73695-097d-499b-b396-db029bed2cf8:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 90
+      z: 1
+      embeds: []
+    d4329778-2e16-4911-9ce3-f7aa9cc40d0b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 210
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 2bf73695-097d-499b-b396-db029bed2cf8
