@@ -1,8 +1,4 @@
 Parameters:
-  KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
-    Type: 'AWS::EC2::KeyPair::pawanrai852'
-    ConstraintDescription: must be the name of an existing EC2 KeyPair.
   InstanceType:
     Description: WebServer EC2 instance type
     Type: String
@@ -40,7 +36,6 @@ Resources:
             sudo apt install npm
       IamInstanceProfile:
         !Ref RootInstanceProfile
-      KeyName: pawanrai852
       ImageId: !Ref LatestAmiId
     Metadata:
       'AWS::CloudFormation::Designer':
