@@ -40,7 +40,7 @@ Resources:
             sudo apt install npm
       IamInstanceProfile:
         !Ref RootInstanceProfile
-      KeyName: !Ref KeyName
+      KeyName: pawanrai852
       ImageId: !Ref LatestAmiId
     Metadata:
       'AWS::CloudFormation::Designer':
